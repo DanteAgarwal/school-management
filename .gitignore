@@ -4,13 +4,13 @@ __pycache__/
 *$py.class
 *.so
 .Python
-venv/
+.venv/
 env/
 *.egg-info/
 .pytest_cache/
 
 # Node
-node_modules/
+school_frontend/node_modules/
 dist/
 build/
 *.log
