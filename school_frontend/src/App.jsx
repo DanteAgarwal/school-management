@@ -48,11 +48,11 @@ class WebSocketManager {
   disconnect() { try { this.ws.close(); } catch { } this.ws = null; }
 }
 
-const wsManager = new WebSocketManager("ws://localhost:8000/ws");
+const wsManager = new WebSocketManager("ws://school-management-o7bo.onrender.com/ws");
 
 // API
 
-const API_URL = "http://localhost:8000";
+const API_URL = "https://school-management-o7bo.onrender.com";
 const api = {
   async request(endpoint, method = "GET", data = null, token = null, isFile = false) {
     const headers = {};
