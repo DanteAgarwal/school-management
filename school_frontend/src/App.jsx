@@ -10,6 +10,13 @@ import { toast } from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 
 // WebSocket Manager
+// Auto protocol WebSocket URL
+const WS_BASE =
+  window.location.protocol === "https:"
+    ? "wss://school-management-o7bo.onrender.com/ws"
+    : "ws://localhost:8000/ws";
+
+// WebSocket Manager
 class WebSocketManager {
   constructor(url) {
     this.url = url;
@@ -21,34 +28,74 @@ class WebSocketManager {
 
   connect(token) {
     if (this.ws) this.disconnect();
-    const url = `${this.url}?token=${token}`;
-    this.ws = new WebSocket(url);
 
-    this.ws.onopen = () => { this.reconnectDelay = 1000; console.log('WS open'); };
-    this.ws.onmessage = e => {
-      try { const data = JSON.parse(e.data); this.listeners.forEach(cb => cb(data)); }
-      catch { }
+    const urlWithToken = `${this.url}?token=${token}`;
+    this.ws = new WebSocket(urlWithToken);
+
+    this.ws.onopen = () => {
+      console.log("WS Connected");
+      this.reconnectDelay = 1000;
     };
+
+    this.ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        this.listeners.forEach((cb) => cb(data));
+      } catch {}
+    };
+
     this.ws.onclose = (ev) => {
-      if (ev && ev.code === 4001) { // customize server code for auth failed
-        console.warn("WS auth failed; not reconnecting");
+      // Custom auth failure exit
+      if (ev?.code === 4001) {
+        console.warn("WS auth failed → no reconnect");
         return;
       }
-      console.log("WS closed, reconnecting in", this.reconnectDelay);
+
+      console.warn(
+        `WS closed. Reconnecting in ${this.reconnectDelay / 1000}s...`
+      );
+
       setTimeout(() => {
-        this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxDelay);
-        this.connect(token);
+        this.reconnectDelay = Math.min(
+          this.reconnectDelay * 2,
+          this.maxDelay
+        );
+        this.connect(token); // reconnect
       }, this.reconnectDelay);
     };
-    this.ws.onerror = () => this.ws.close();
+
+    this.ws.onerror = () => {
+      console.warn("WS error");
+      try {
+        this.ws.close();
+      } catch {}
+    };
   }
 
-  subscribe(cb) { this.listeners.push(cb); return () => { this.listeners = this.listeners.filter(x => x !== cb) } }
-  send(obj) { if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(obj)); }
-  disconnect() { try { this.ws.close(); } catch { } this.ws = null; }
+  subscribe(cb) {
+    this.listeners.push(cb);
+    return () => {
+      this.listeners = this.listeners.filter((x) => x !== cb);
+    };
+  }
+
+  send(obj) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(obj));
+    }
+  }
+
+  disconnect() {
+    try {
+      this.ws?.close();
+    } catch {}
+    this.ws = null;
+  }
 }
 
-const wsManager = new WebSocketManager("ws://school-management-o7bo.onrender.com/ws");
+export const wsManager = new WebSocketManager(WS_BASE);
+
+
 
 // API
 
